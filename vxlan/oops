@@ -1,0 +1,77 @@
+[ 4290.928332] =============================================
+[ 4290.928784] [ INFO: possible recursive locking detected ]
+[ 4290.929240] 3.7.0-rc3+ #11 Not tainted
+[ 4290.929519] ---------------------------------------------
+[ 4290.929966] swapper/1/0 is trying to acquire lock:
+[ 4290.930308]  (&n->lock){++--..}, at: [<ffffffff814f4c6e>] __neigh_event_send+0x2e/0x300
+[ 4290.930981] 
+[ 4290.930981] but task is already holding lock:
+[ 4290.931425]  (&n->lock){++--..}, at: [<ffffffff8154cac0>] arp_solicit+0x1f0/0x280
+[ 4290.932107] 
+[ 4290.932107] other info that might help us debug this:
+[ 4290.932107]  Possible unsafe locking scenario:
+[ 4290.932107] 
+[ 4290.932107]        CPU0
+[ 4290.932107]        ----
+[ 4290.932107]   lock(&n->lock);
+[ 4290.932107]   lock(&n->lock);
+[ 4290.932107] 
+[ 4290.932107]  *** DEADLOCK ***
+[ 4290.932107] 
+[ 4290.932107]  May be due to missing lock nesting notation
+[ 4290.932107] 
+[ 4290.932107] 4 locks held by swapper/1/0:
+[ 4290.932107]  #0:  (((&n->timer))){+.-...}, at: [<ffffffff8104bd70>] call_timer_fn+0x0/0xf0
+[ 4290.932107]  #1:  (&n->lock){++--..}, at: [<ffffffff8154cac0>] arp_solicit+0x1f0/0x280
+[ 4290.932107]  #2:  (rcu_read_lock_bh){.+....}, at: [<ffffffff814ec790>] dev_queue_xmit+0x0/0x590
+[ 4290.932107]  #3:  (rcu_read_lock_bh){.+....}, at: [<ffffffff81520286>] ip_finish_output+0xc6/0x530
+[ 4290.932107] 
+[ 4290.932107] stack backtrace:
+[ 4290.932107] Pid: 0, comm: swapper/1 Not tainted 3.7.0-rc3+ #11
+[ 4290.932107] Call Trace:
+[ 4290.932107]  <IRQ>  [<ffffffff8108cd9c>] __lock_acquire+0x84c/0x1c50
+[ 4290.932107]  [<ffffffff8108e687>] lock_acquire+0x67/0x90
+[ 4290.932107]  [<ffffffff814f4c6e>] ? __neigh_event_send+0x2e/0x300
+[ 4290.932107]  [<ffffffff815f3c4b>] _raw_write_lock_bh+0x3b/0x50
+[ 4290.932107]  [<ffffffff814f4c6e>] ? __neigh_event_send+0x2e/0x300
+[ 4290.932107]  [<ffffffff814f4c6e>] __neigh_event_send+0x2e/0x300
+[ 4290.932107]  [<ffffffff814f50ab>] neigh_resolve_output+0x16b/0x270
+[ 4290.932107]  [<ffffffff815203dc>] ip_finish_output+0x21c/0x530
+[ 4290.932107]  [<ffffffff81520286>] ? ip_finish_output+0xc6/0x530
+[ 4290.932107]  [<ffffffff81517c14>] ? __ip_route_output_key+0x374/0x8c0
+[ 4290.932107]  [<ffffffff815178a0>] ? rt_set_nexthop.isra.33+0x280/0x280
+[ 4290.932107]  [<ffffffff81521da4>] ip_output+0x54/0xf0
+[ 4290.932107]  [<ffffffff81521328>] ip_local_out+0x28/0x90
+[ 4290.932107]  [<ffffffffa00018d2>] vxlan_xmit+0x4b2/0x6b0 [vxlan]
+[ 4290.932107]  [<ffffffffa00017dd>] ? vxlan_xmit+0x3bd/0x6b0 [vxlan]
+[ 4290.932107]  [<ffffffff814ec20e>] dev_hard_start_xmit+0x20e/0x440
+[ 4290.932107]  [<ffffffff814ecaaa>] dev_queue_xmit+0x31a/0x590
+[ 4290.932107]  [<ffffffff814ec790>] ? netdev_pick_tx+0x350/0x350
+[ 4290.932107]  [<ffffffff8154be0d>] arp_xmit+0x1d/0x60
+[ 4290.932107]  [<ffffffff8154c0bb>] arp_send+0x3b/0x40
+[ 4290.932107]  [<ffffffff8154caef>] arp_solicit+0x21f/0x280
+[ 4290.932107]  [<ffffffff814f4755>] neigh_probe+0x45/0x70
+[ 4290.932107]  [<ffffffff814f7051>] neigh_timer_handler+0xa1/0x2d0
+[ 4290.932107]  [<ffffffff8104bd70>] ? usleep_range+0x40/0x40
+[ 4290.932107]  [<ffffffff814f6fb0>] ? __neigh_create+0x620/0x620
+[ 4290.932107]  [<ffffffff8104bde4>] call_timer_fn+0x74/0xf0
+[ 4290.932107]  [<ffffffff8104bd70>] ? usleep_range+0x40/0x40
+[ 4290.932107]  [<ffffffff8108f022>] ? trace_hardirqs_on_caller+0xb2/0x1a0
+[ 4290.932107]  [<ffffffff814f6fb0>] ? __neigh_create+0x620/0x620
+[ 4290.932107]  [<ffffffff8104c16b>] run_timer_softirq+0x18b/0x220
+[ 4290.932107]  [<ffffffff81046602>] __do_softirq+0xd2/0x1a0
+[ 4290.932107]  [<ffffffff8100a9b9>] ? sched_clock+0x9/0x10
+[ 4290.932107]  [<ffffffff815f61bc>] call_softirq+0x1c/0x30
+[ 4290.932107]  [<ffffffff81004a3d>] do_softirq+0x9d/0xd0
+[ 4290.932107]  [<ffffffff8104687e>] irq_exit+0xae/0xe0
+[ 4290.932107]  [<ffffffff81026148>] smp_apic_timer_interrupt+0x68/0xa0
+[ 4290.932107]  [<ffffffff815f5a72>] apic_timer_interrupt+0x72/0x80
+[ 4290.932107]  <EOI>  [<ffffffff8102df56>] ? native_safe_halt+0x6/0x10
+[ 4290.932107]  [<ffffffff8108f11d>] ? trace_hardirqs_on+0xd/0x10
+[ 4290.932107]  [<ffffffff8100b7a6>] default_idle+0x36/0x70
+[ 4290.932107]  [<ffffffff8100c31e>] cpu_idle+0x11e/0x140
+[ 4290.932107]  [<ffffffff815e033b>] start_secondary+0x1f7/0x1fe
+ 
+
+/proc/modules
+vxlan 12783 0 - Live 0xffffffffa0000000
