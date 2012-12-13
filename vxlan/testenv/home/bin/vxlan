@@ -1,0 +1,4 @@
+#!/bin/sh
+ip link add vxlan42 type vxlan id 42 group 239.0.0.42 ttl 10 dev eth0
+ip link set up dev vxlan42
+ip addr add 192.168.99.${uts#r}/24 dev vxlan42

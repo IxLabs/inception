@@ -1,0 +1,83 @@
+
+		Prerequisites
+
+	* brctl
+	* screen
+	* qemu 1.2 with kvm
+	* linux kernel image named "linux" (at least 3.7)
+	* mrouted (or other multicast routing daemon)
+	* iproute2 from git (matching the kernel)
+	* iperf, netperf for some of the tests
+
+		Setup configuration
+
+	The setup scripts are a simplified version of those created
+	by Vincent Bernat found here:
+	https://github.com/vincentbernat/network-lab/tree/master/lab-vxlan
+	http://vincent.bernat.im/en/blog/2012-multicast-vxlan.html
+
+	The host needs to have mrouted configured for the multicast group
+	239.0.0.42. For mrouted, add the line:
+
+		LOCAL 239.0.0.0/24
+
+	to /etc/mrouted.conf
+
+	1. Bridged VMs
+
+	* On the host run:
+		./setup-bridge
+
+	The setup-bridge script starts 4 KVM machines and multiplexes
+	their consoles using screen. It also configures a bridge br0 and
+	adds the corresponding tap interfaces.
+
+	VM1: eth0: 192.168.33.2
+	VM2: eth0: 192.168.33.3
+	VM3: eth0: 192.168.33.4
+	VM4: eth0: 192.168.33.5
+	
+	Host: br0: 192.168.33.1
+
+	The "$PWD/home" directory will be mounted (rw) as the home directory
+	for the root user in each VM.
+
+	* In each vm run:
+		"vxlan"
+	
+	This creates a vxlan42 device with ip 192.168.99.{1,2,3,4}
+
+	* On the host run:
+		./setup-host
+
+	This creates a vxlan42 device on top of the br0 bridge
+	and assigns the 192.168.99.5 ip address to it. It only works
+	if the host also runs the net-next kernel with vxlan.
+
+	Now you can ping from one vm to another:
+	vm1: ping 192.168.99.2
+
+	or from a vm to the host:
+	vm1: ping 192.168.99.5
+
+
+	2. Host as router
+
+	* On the host run:
+		./setup
+
+	Each vm will get its own subnet:
+
+	VM1: eth0: 192.168.33.2/24
+	VM2: eth0: 192.168.34.2/24
+	VM3: eth0: 192.168.35.2/24
+	VM4: eth0: 192.168.36.2/24
+
+	The host will have 4 tap interfaces:
+
+	tap0: 192.168.33.1
+	tap1: 192.168.34.1
+	tap2: 192.168.35.1
+	tap3: 192.168.36.1
+
+
