@@ -1,0 +1,10 @@
+
+The directory tests/ contain a number of scripts used in VMs to measure
+throughput with netperf and to test different features.
+
+test_id_range			Creates vxlan device with different ids
+test_tcp_sendfile		Run on vm1. On vm2 you need to run netserver
+test_tcp_stream			Run on vm1. On vm2 you need to run netserver
+test_tcp_stream_bridge		Run on vm1. On the host you need to run netserver
+test_tcp_stream_direct		Run on vm1. On vm2 you need to run netserver
+test_udp_stream			Run on vm1. On vm2 you need to run netserver

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Create vxlan devices with different ID's
+
+# $1 - start id
+# $2 - end id
+test_id_range()
+{
+	echo "Test id range $1-$2"
+	for ((i = $1; i <= $2; i++)); do
+		ip link add dev vxlan type vxlan id "$i" group 239.0.0.42 ttl 10 dev eth0 &> /dev/null
+		if [ "$?" -ne 0 -a $i -ge 0 ]; then
+			ip link del dev vxlan
+			echo "Test failed at ID $i"
+			exit 1
+		fi
+		ip link del dev vxlan
+	done
+}
+
+
+test_id_range -3 -1
+test_id_range 0 100
+test_id_range $((2**24 - 100)) $((2**24 - 2))
+

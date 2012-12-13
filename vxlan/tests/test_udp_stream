@@ -1,0 +1,8 @@
+#!/bin/bash
+
+COUNT=1
+
+for i in $(seq $COUNT); do
+	netperf -l 10 -t UDP_STREAM -H 192.168.99.2 &
+done
+

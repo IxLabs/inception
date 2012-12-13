@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# netserver running on VM2
+
+COUNT=1
+
+for i in $(seq $COUNT); do
+	netperf -l 10 -t TCP_STREAM -H 192.168.33.3 --  &
+done
+
