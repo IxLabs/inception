@@ -1,0 +1,33 @@
+
+	VXLAN Overhead
+
+* Each VM has 1 VCPU and 512MB RAM
+	Using iperf -s, iperf -c, TCP
+
+	1. VM1 -- br0 -- VM2: 16 Gb/s
+	2. VM1 -- VXLAN -- br0 -- VXLAN -- VM2: 1 Gb/s
+
+	Using netperf and netserver, TCP_STREAM
+
+	1. VM1 -- br0 -- VM2: 15.8 Gb/s
+	2. VM1 -- VXLAN -- br0 -- VXLAN -- VM2: 980 Mb/s
+
+* Each VM has 1 VCPU and 512MB RAM, with JumboFrames (9000 MTU on tap devices)
+	Using iperf -s, iperf -c, TCP
+
+	1. VM1 -- br0 -- VM2: 16 Gb/s
+	2. VM1 -- VXLAN -- br0 -- VXLAN -- VM2: 8 Gb/s
+
+* Each VM has 1 VCPU and 512MB RAM, with JumboFrames (16384 MTU on tap devices)
+	Using iperf -s, iperf -c, TCP
+
+	1. VM1 -- br0 -- VM2: 16 Gb/s
+	2. VM1 -- VXLAN -- br0 -- VXLAN -- VM2: 10 Gb/s
+
+* Each VM has 2 VCPUs and 512MB RAM
+	iperf -c -P 2, TCP
+
+	1. VM1 -- br0 -- VM2: 16 Gb/s
+	2. VM1 -- VXLAN -- br0 -- VXLAN -- VM2: 1 Gb/s
+
+
