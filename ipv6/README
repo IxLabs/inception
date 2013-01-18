@@ -1,0 +1,31 @@
+	v6eval-env
+
+This script creates a virtual environment for testing the IPv6 stack of the
+Linux kernel using v6eval from the TAHI project[1].
+
+Two virtual machines are created and connected according to this topology:
+
+        192.168.33.1
+    tap0----br0----tap2
+     |              |
+     |              |   
+    eth0           eth0
+    VM1            VM2
+    eth1           eth1
+     |              |
+     |              |
+    tap1----br1----tap3
+       192.168.34.1
+
+
+
+
+
+
+
+
+
+
+
+  [1] - www.tahi.org
+

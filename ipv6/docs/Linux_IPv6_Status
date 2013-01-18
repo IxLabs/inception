@@ -1,0 +1,12 @@
+From 2006: http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-kernel.html
+From 2008: http://techylib.com/en/view/lumpishtrickle/in_the_linux_i_pv_6_stack_hideaki_yoshifujia
+
+
+IPv6 Testing: http://www.tahi.org/
+TAHI was created for BSD; IBM made some patches for Linux 2.2
+A new patch for fedora 8, more info here:
+http://wundermark.blogspot.ro/2008/09/running-tahi-v6eval-suite-on-linux.html
+http://kuoi.com/~darkmark/tahi-linux/v6eval_fedora8.diff
+New patch for v6eval3.3:
+http://wundermark.blogspot.ro/2012/02/linux-patches-for-tahi-v6eval-332.html
+
