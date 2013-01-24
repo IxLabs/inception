@@ -7,7 +7,7 @@
 #eth1        - tap1  br1          tap3 - eth1
 #192.168.34.2        192.168.34.1        192.168.34.3
 
-LABNAME="vxlan"
+LABNAME="v6eval"
 PROGNAME=$(readlink -f $0)
 PROGARGS="$@"
 
@@ -15,7 +15,7 @@ ROOT=$(readlink -f ${ROOT:-/})
 LINUX=$(readlink -f ${LINUX:-./linux})
 
 WHICH=$(which which)
-DEPS="screen brctl start-stop-daemon kvm"
+DEPS="screen brctl start-stop-daemon kvm cu socat perl"
 CHROOTDEPS="ip"
 
 HOMESHARE=$PWD/home
@@ -81,29 +81,30 @@ start_vm() {
     shift
 
     netargs=""
-    #saveifs="$IFS"
-    #IFS=,
+    # Add 2 tap devices to the VM
+    # The second one can be used to test routing functionalities.
     for net in $NET; do
-	IFACE=$(sudo tunctl -b -u alex)
+	IFACE=$(tunctl -b)
 	TAPS="$TAPS $IFACE"
 	generate_mac "$name-$net-$IFACE"
+	if [ "$name" == "r2" ]; then
+		mac="00:00:cc:dd:ee:ff"
+	fi
 	netargs="-netdev type=tap,id=guest0,ifname=$IFACE -device virtio-net-pci,netdev=guest0,mac=$mac"
 	ip link set up dev "$IFACE"
 
 	brctl addif br0 "$IFACE"
-	ip a a 192.168.33.1/24 dev br0
+	#ip a a 192.168.33.1/24 dev br0
 
-	IFACE=$(sudo tunctl -b -u alex)
+	IFACE=$(tunctl -b)
 	TAPS="$TAPS $IFACE"
 	generate_mac "$name-$net-$IFACE"
 	netargs="$netargs -netdev type=tap,id=guest1,ifname=$IFACE -device virtio-net-pci,netdev=guest1,mac=$mac"
 	ip link set up dev "$IFACE"
-	brctl addif br1 "$IFACE"
-	ip a a 192.168.34.1/24 dev br1
-    done
-    #IFS="$saveifs"
 
-    #ip a a 192.168.$((32 + $NET)).1/24 dev "$IFACE"
+	brctl addif br1 "$IFACE"
+	#ip a a 192.168.34.1/24 dev br1
+    done
 
     # /root is mounted with version 9p2000.u to allow access to /dev,
     # /sys and to mount new partitions over them. This is not the case
@@ -132,16 +133,14 @@ start_vm() {
         \
         -gdb unix:$TMP/vm-$name-gdb.pipe,server,nowait \
         -kernel $LINUX \
-        -append "init=$PROGNAME console=ttyS0 uts=$name root=/dev/root rootflags=trans=virtio,version=9p2000.u ro rootfstype=9p" \
+        -append "init=$PROGNAME console=ttyS0 uts=$name root=/dev/root rootflags=trans=virtio,version=9p2000.u ro rootfstype=9p POSTINIT=\"$POSTINIT\"" \
         $netargs \
         "$@"
-
     echo "GDB server listening on.... $TMP/vm-$name-gdb.pipe"
     echo "monitor listening on....... $TMP/vm-$name-console.pipe"
     echo "ttyS1 listening on......... $TMP/vm-$name-serial.pipe"
 
     screen -X select 0
-
 }
 
 display_help() {
@@ -205,9 +204,6 @@ case $$,$STATE in
             mount -t tmpfs tmpfs $fs -o rw,nosuid,nodev
         done
 
-        #info "Start udev"
-        #/etc/init.d/udev start
-
         info "Setup interfaces"
         for intf in /sys/class/net/*; do
             intf=$(basename $intf)
@@ -218,7 +214,13 @@ case $$,$STATE in
                     ;;
             esac
         done
+	# Need devpts for remote logins
+	mkdir -p /dev/pts
+	mount -t devpts none /dev/pts
+	# Also, cu utility needs write access
+	mount -t tmpfs none /usr/spool/uucp
 
+	
         info "Setup terminal"
         export STATE=2
         exec setsid /sbin/agetty -L ttyS0 -a root -l "$PROGNAME" -i 115200
@@ -240,6 +242,31 @@ EOF
                 ;;
         esac
 
+	if [ "$POSTINIT" ]; then
+		info "Running postinit: $POSTINIT"
+		"$POSTINIT"
+	fi
+
+	if [ $uts == "r1" ]; then
+		echo 1 > /proc/sys/net/ipv6/conf/eth0/disable_ipv6
+	fi
+
+	modprobe slip
+	mount -o bind /tmp/home/etc/ /etc
+
+	# Second VM is the tested one
+	if [ $uts == "r2" ]; then
+
+		/etc/rc.d/sshd start
+
+		# Wait for remote login on serial line
+		while true; do
+			#agetty -8 -iL ttyS1 9600 vt102 --nohostname --noclear 
+			break;
+		done
+	fi
+
+
         while true; do
             info "Spawning a shell"
             cd $HOME
@@ -260,18 +287,26 @@ EOF
         case $uts in
             r1)
                 ip addr add 192.168.33.2/24 dev eth0
-		ip addr add 192.168.34.2/24 dev eth1
+		slattach -p slip -s 9600 /dev/ttyS1 &
+		sleep 1
+		ifconfig sl0 192.168.2.1 pointopoint 192.168.2.2 up
+		#ip addr add 192.168.34.2/24 dev eth1
+		ip l s down dev eth1
                 ;;
             r2)
                 ip addr add 192.168.33.3/24 dev eth0
-		ip addr add 192.168.34.3/24 dev eth1
+		#ip addr add 192.168.34.3/24 dev eth1
+		slattach -p slip -s 9600 /dev/ttyS1 &
+		sleep 1
+		ifconfig sl0 192.168.2.2 pointopoint 192.168.2.1 up
+		ip l s down dev eth1
                 ;;
         esac
 
         ;;
     *,*)
         [ $(id -u) != 0 ] || {
-            error "You should not run this as root, unless you use tap"
+            error "You should not run this as root, unless you use tap devices"
             #exit 1
         }
         check_dependencies
@@ -286,11 +321,18 @@ EOF
 	ifconfig br1 up
 
         sleep 0.3
-        NET=1 VLAN=0 start_vm r1
-        NET=2 VLAN=0 start_vm r2
+        NET=1 VLAN=0 POSTINIT="" start_vm r1
+        NET=2 VLAN=0 POSTINIT="" start_vm r2
+
+	# Create a serial line between the 2 VMs
+	sleep 2
+	socat "$TMP/vm-r1-serial.pipe" "$TMP/vm-r2-serial.pipe" &
 
         display_help
         cleanup
+
+	killall socat
+
         ;;
 esac
 

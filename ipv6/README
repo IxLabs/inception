@@ -1,4 +1,14 @@
-	v6eval-env
+		v6eval-env
+
+
+	Prerequisites
+
+	* screen, start-stop-daemon, kvm
+	* cu(uucp), socat
+	* BSD pmake (included in home/bin)
+	* v6eval installation
+	* TAHI conformance tests(ct): SelfTest
+	* ssh
 
 This script creates a virtual environment for testing the IPv6 stack of the
 Linux kernel using v6eval from the TAHI project[1].
@@ -18,14 +28,35 @@ Two virtual machines are created and connected according to this topology:
        192.168.34.1
 
 
+There is also a serial link between the machines used for remote management.
+Initially, v6eval uses plain remote logins over the serial line, but I
+couldn't make it work so I changed the remote implementation to work over ssh.
+Over the serial link the VMs run SLIP with IPs 192.168.2.{1,2}. 
+The account used on VM2 is root:root.
 
 
+In the v6eval topology, VM1 is TN (Tester Node) and VM2 is the NUT (Network
+Under Test).
 
 
+	Getting v6eval to build on Linux
 
-
-
+* Get v6eval-3.3.2.tar.gz from [1] and extract
+* Get patch from [2]
+* Install pmake (BSD make). Included in home/bin
+* pmake && pmake install
+* Files will be installed in /usr/local/v6eval
+* Copy v6eval-configs/*.def to /usr/local/v6eval/etc
+* Get the self test suite from [3]
+* Extract the tests in the "home" directory
+* Run the tests in VM1:
+    # cd Self_Test_5-0-0/
+    # pmake ipv6ready_p1_host
+* Or, one test at a time, manually:
+    # cd Self_Test_5-0-0/nd.p2
+    # ./V6LC_2_1_1_A.seq -pkt V6LC_2_1_1_A.def
 
 
   [1] - www.tahi.org
-
+  [2] - http://wundermar].blogspot.ro/2012/02/linux-patches-for-tahi-v6eval-332.html
+  [3] - http://www.tahi.org/logo/release/Self_Test_5-0-0.tgz
