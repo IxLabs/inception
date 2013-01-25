@@ -47,6 +47,11 @@ Under Test).
 * pmake && pmake install
 * Files will be installed in /usr/local/v6eval
 * Copy v6eval-configs/*.def to /usr/local/v6eval/etc
+
+* Install patched v6eval-remotes
+  # cd v6eval-remotes-3.0
+  # pmake && pmake install
+
 * Get the self test suite from [3]
 * Extract the tests in the "home" directory
 * Run the tests in VM1:
