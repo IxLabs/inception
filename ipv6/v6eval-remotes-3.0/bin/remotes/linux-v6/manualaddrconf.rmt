@@ -55,6 +55,8 @@ $rOpt_addrfamily = "inet6" if ! defined $rOpt_addrfamily;
 #$rOpt_len
 #$rOpt_netmask
 
+print STDERR "MANUAL ADDRCONF";
+
 rOpen() || goto error;
 rLogin($rOpt_timeout) || goto error;
 

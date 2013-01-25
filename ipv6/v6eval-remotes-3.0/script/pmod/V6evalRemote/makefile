@@ -1,4 +1,4 @@
-PERL5	= perl5
+PERL5	= perl
 
 all: Makefile
 	$(MAKE) -f Makefile
