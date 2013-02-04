@@ -47,6 +47,8 @@ Under Test).
 * pmake && pmake install
 * Files will be installed in /usr/local/v6eval
 * Copy v6eval-configs/*.def to /usr/local/v6eval/etc
+  Use tn-router.def and nut-router.def for testing VM2
+  as a router. Rename them to tn.def and nut.def.
 
 * Install patched v6eval-remotes
   # cd v6eval-remotes-3.0
@@ -56,7 +58,13 @@ Under Test).
 * Extract the tests in the "home" directory
 * Run the tests in VM1:
     # cd Self_Test_5-0-0/
-    # pmake ipv6ready_p1_host
+    # pmake ipv6ready_p1_host     #Phase 1 host tests
+    # pmake ipv6ready_p2_host     #Phase 2 host test
+
+    If you need to test the routing functionality, use:
+    # pmake ipv6ready_p1_router
+    # pmake ipv6ready_p2_router
+
 * Or, one test at a time, manually:
     # cd Self_Test_5-0-0/nd.p2
     # ./V6LC_2_1_1_A.seq -pkt V6LC_2_1_1_A.def
