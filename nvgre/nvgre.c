@@ -52,8 +52,10 @@
 #define NVGRE_VID_MASK	(NVGRE_N_VID - 1)
 /* IP header + nvgre + Ethernet header */
 #define NVGRE_HEADROOM (20 + 8 + 14)
-
-#define NVGRE_FLAGS 0x2000	/* struct nvgrehdr.nv_flags required value. */
+/* struct nvgrehdr.nv_flags required value. 
+ * KEY_BIT set and VERSION = 2
+ */
+#define NVGRE_FLAGS 0x2002
 
 /* nvgre protocol header */
 struct nvgrehdr {
@@ -635,15 +637,83 @@ static int nvgre_leave_group(struct net_device *dev)
 
 static int nvgre_rcv(struct sk_buff *skb)
 {
-	struct gre_base_hdr *gre;
+	struct nvgrehdr *grehdr;
+	struct nvgre_dev *nvgre;
+	struct iphdr *oip;
+	struct pcpu_tstats *stats;
+	__u32 vsn;
+	int err;
 
-	if (!pskb_may_pull(skb, 12))
+	if (!pskb_may_pull(skb, sizeof(*grehdr)))
 		goto drop;
 
-	gre = skb->data;
+	grehdr = skb->data;
+	vsn = htonl(grehdr->nv_key << 8) & 0xffffff;
 
-	printk(KERN_CRIT "nvgre_rcv packet, next=%d\n", gre->protocol);
+	__skb_pull(skb, sizeof(struct nvgrehdr));
 
+	printk(KERN_CRIT "nvgre_rcv packet, vsn=%d\n", vsn);
+	nvgre = nvgre_find_vni(&init_net, vsn);
+	if (!nvgre) {
+		netdev_dbg(skb->dev, "unknown vni %d\n", vsn);
+		goto drop;
+	}
+	printk(KERN_CRIT "found nvgre device for vni %d\n", vsn);
+
+	if (!pskb_may_pull(skb, ETH_HLEN)) {
+		nvgre->dev->stats.rx_length_errors++;
+		nvgre->dev->stats.rx_errors++;
+		goto drop;
+	}
+
+	skb_reset_mac_header(skb);
+
+	/* Re-examine inner Ethernet packet */
+	oip = ip_hdr(skb);
+	skb->protocol = eth_type_trans(skb, nvgre->dev);
+
+	/* Ignore packet loops (and multicast echo) */
+	if (compare_ether_addr(eth_hdr(skb)->h_source,
+			       nvgre->dev->dev_addr) == 0)
+		goto drop;
+
+	if (nvgre->flags & NVGRE_F_LEARN)
+		nvgre_snoop(skb->dev, oip->saddr, eth_hdr(skb)->h_source);
+
+	__skb_tunnel_rx(skb, nvgre->dev);
+	skb_reset_network_header(skb);
+
+	/* If the NIC driver gave us an encapsulated packet with
+	 * CHECKSUM_UNNECESSARY and Rx checksum feature is enabled,
+	 * leave the CHECKSUM_UNNECESSARY, the device checksummed it
+	 * for us. Otherwise force the upper layers to verify it.
+	 */
+	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation ||
+	    !(nvgre->dev->features & NETIF_F_RXCSUM))
+		skb->ip_summed = CHECKSUM_NONE;
+
+	skb->encapsulation = 0;
+
+	err = IP_ECN_decapsulate(oip, skb);
+	if (unlikely(err)) {
+		if (log_ecn_error)
+			net_info_ratelimited("non-ECT from %pI4 with TOS=%#x\n",
+					     &oip->saddr, oip->tos);
+		if (err > 1) {
+			++nvgre->dev->stats.rx_frame_errors;
+			++nvgre->dev->stats.rx_errors;
+			goto drop;
+		}
+	}
+
+	stats = this_cpu_ptr(nvgre->dev->tstats);
+	u64_stats_update_begin(&stats->syncp);
+	stats->rx_packets++;
+	stats->rx_bytes += skb->len;
+	u64_stats_update_end(&stats->syncp);
+
+	netif_rx(skb);
+	printk(KERN_CRIT "netif_rx done\n");
 	return NET_RX_SUCCESS;
 drop:
 	kfree_skb(skb);
@@ -1016,7 +1086,7 @@ static netdev_tx_t nvgre_xmit_one(struct sk_buff *skb, struct net_device *dev,
 
 	vxh = (struct nvgrehdr *) __skb_push(skb, sizeof(*vxh));
 	vxh->nv_flags = htons(NVGRE_FLAGS);
-	vxh->nv_key = htonl(vni);
+	vxh->nv_key = htonl(vni) >> 8;
 	vxh->nv_protocol = htons(ETH_P_TEB);
 
 	__skb_push(skb, sizeof(*iph));
