@@ -1,0 +1,3 @@
+* run "make-kernel" inside a kernel source tree
+* edit build-lab.sh change KERNEL_DIR to point to <kernel_source>/build
+* run "build-lab.sh" with root permissions 

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Install path
+if [ -z "$1" ]; then
+	IPATH="$PWD/build"
+else
+	IPATH="$1"
+fi
+
+test -d "$IPATH" || mkdir -p "$IPATH"
+
+make -j4
+
+make INSTALL_MOD_PATH="$IPATH" modules_install -j4
+
+ver=$(grep "^VERSION =" < Makefile | cut -d ' ' -f3)
+patch=$(grep "^PATCHLEVEL =" < Makefile | cut -d ' ' -f3)
+sub=$(grep "^SUBLEVEL =" < Makefile | cut -d ' ' -f3)
+extra=$(grep "^EXTRAVERSION =" < Makefile | cut -d ' ' -f3)
+
+kver="$ver.$patch.$sub$extra+"
+echo "Kernel Version: $kver"
+
+cp arch/x86/boot/bzImage "${IPATH}/linux"
+
