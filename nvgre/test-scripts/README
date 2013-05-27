@@ -1,3 +1,5 @@
 * run "make-kernel" inside a kernel source tree
 * edit build-lab.sh change KERNEL_DIR to point to <kernel_source>/build
-* run "build-lab.sh" with root permissions 
+* run "run.sh" with root permissions 
+* in each VM console run "./prepare.sh" to configure the nvgre device
+
