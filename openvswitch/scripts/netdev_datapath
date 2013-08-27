@@ -1,0 +1,1 @@
+sudo ovs-vsctl add-br br1 -- set bridge br1 datapath_type=netdev

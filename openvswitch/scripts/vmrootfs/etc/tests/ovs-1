@@ -1,0 +1,7 @@
+#!/bin/sh
+
+modprobe e1000
+
+ip a a 10.0.0.1/24 dev eth0
+ip l s up dev eth0
+

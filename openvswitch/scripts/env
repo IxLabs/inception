@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This is the installation prefix for openvswitch
+OVS=/home/alex/projects/openvswitch/openvswitch-build
+# This is the source directory
+OVS_SRC=/home/alex/projects/openvswitch/openvswitch-build
+
+export PATH="$PATH":"$OVS/bin:$OVS/sbin"
